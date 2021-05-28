@@ -1,4 +1,4 @@
-package com.app.esper_demo.database
+package com.app.esper_demo.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -14,5 +14,5 @@ interface ExclusionDao {
     suspend fun nukeTable()
 
     @Insert
-    suspend fun insertListOfStocks(exclusions: List<ExclusionDetail>)
+    suspend fun insertExclusions(exclusions: List<ExclusionDetail>)
 }

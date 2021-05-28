@@ -79,7 +79,7 @@ abstract class BaseFragment : Fragment() {
         activity?.showToast(message, length)
     }
 
-    protected fun handleApiError(error: String?) {
-        error?.let { showToast(it, Snackbar.LENGTH_LONG) }
+    protected fun handleApiError(errorCode: Int?, errorMessage: String?) {
+        showToast("$errorCode: $errorMessage", Snackbar.LENGTH_LONG)
     }
 }

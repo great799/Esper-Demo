@@ -1,12 +1,15 @@
 package com.app.esper_demo.base
 
 import com.app.esper_demo.utils.ApiResponseWrapper
+import com.app.esper_demo.utils.AppLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.HttpException
 import java.io.IOException
+
+const val GENERIC_ERROR = 457
 
 abstract class BaseRepository {
 
@@ -27,7 +30,8 @@ abstract class BaseRepository {
                     }
                     else -> {
                         //handle according to use case
-                        ApiResponseWrapper.GenericError(null, null)
+                        AppLog.e(throwable.message ?: "")
+                        ApiResponseWrapper.GenericError(GENERIC_ERROR, throwable.message)
                     }
                 }
             }
