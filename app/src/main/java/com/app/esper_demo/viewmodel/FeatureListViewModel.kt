@@ -61,11 +61,18 @@ class FeatureListViewModel : BaseViewModel() {
         }
     }
 
+    /*
+    * process api to make it display in ui easily
+    * And generate map of original data to filter out features later on selection from ui
+    * */
     private suspend fun processDataToShowInUI(
         features: List<MobileFeatureDetail>,
         exclusionsData: List<List<ExclusionItem>>
     ) {
         withContext(Dispatchers.IO) {
+            /*
+            * create map with "featuresId-optionId" as key and FeatureListAdapterItem as value
+            * */
             originalUIAdapterDataMap = LinkedHashMap()
             var originalUIAdapterData = mutableListOf<FeatureListAdapterItem>()
             for (feature in features) {
@@ -91,6 +98,10 @@ class FeatureListViewModel : BaseViewModel() {
                 }
             }
 
+
+            /*
+            * create map with "featureId-optionId" as key and list of connected "featureId-optionId"'s
+            * */
             exclusionsDataMap = HashMap()
             for (item in exclusionsData) {
                 for (i in item.indices) {
@@ -138,6 +149,11 @@ class FeatureListViewModel : BaseViewModel() {
         return output
     }
 
+
+    /*
+    * create a copy of original data map and filter out features on basis of selected keys("featureId-optionId")
+    * and return new data to ui
+    * */
     private fun refreshItemsOnCheckChange() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
