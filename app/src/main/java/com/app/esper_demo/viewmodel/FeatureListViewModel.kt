@@ -130,6 +130,14 @@ class FeatureListViewModel : BaseViewModel() {
         refreshItemsOnCheckChange()
     }
 
+    fun getSelectedItem(): ArrayList<FeatureListAdapterItem> {
+        val output: ArrayList<FeatureListAdapterItem> = arrayListOf()
+        for (key in selectedItems!!) {
+            output.add(originalUIAdapterDataMap?.get(key)!!)
+        }
+        return output
+    }
+
     private fun refreshItemsOnCheckChange() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {

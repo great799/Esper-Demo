@@ -1,6 +1,10 @@
 package com.app.esper_demo.ui.adapter
 
-class FeatureListAdapterItem {
+import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
+
+@Parcelize
+class FeatureListAdapterItem : Parcelable {
     var featureId: String? = null
     var optionId: String? = null
     var name: String? = null
