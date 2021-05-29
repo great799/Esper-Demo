@@ -40,12 +40,19 @@ class FeatureListAdapter(private val features: List<FeatureListAdapterItem>) :
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val itemHolder = holder as ItemViewHolder
+        if (itemSelectedListener != null) {
+            itemHolder.binding.checkAdapterItem.setOnCheckedChangeListener { _, isChecked ->
+                if (features[position].isChecked != isChecked) {
+                    features[position].isChecked = isChecked
+                    itemSelectedListener?.onItemSelect(
+                        features[position].featureId!!,
+                        features[position].optionId!!,
+                        isChecked
+                    )
+                }
+            }
+        }
         itemHolder.bind(features[position])
-//        if (itemSelectedListener != null) {
-//            itemHolder.binding.checkAdapterItem.setOnCheckedChangeListener { _, isChecked ->
-//                itemSelectedListener?.onItemSelect(position, isChecked)
-//            }
-//        }
     }
 
     override fun getItemCount(): Int {
@@ -69,18 +76,14 @@ class FeatureListAdapter(private val features: List<FeatureListAdapterItem>) :
                 binding.txtAdapterItem.visibility = View.VISIBLE
                 binding.imgAdapterItem.visibility = View.VISIBLE
                 binding.checkAdapterItem.visibility = View.VISIBLE
-                binding.checkAdapterItem.isChecked = item.isChecked
-                binding.checkAdapterItem.setOnCheckedChangeListener { _, isChecked ->
-                    item.isChecked = isChecked
-                    itemSelectedListener?.onItemSelect(/*position, isChecked*/)
-                }
                 binding.txtAdapterItem.text = item.name
                 imageUtils.loadImageWithUrl(item.logo ?: "", binding.imgAdapterItem, -1, -1)
             }
+            binding.checkAdapterItem.isChecked = item.isChecked
         }
     }
 
     interface ItemSelectedListener {
-        fun onItemSelect(/*index: Int, isChecked: Boolean*/)
+        fun onItemSelect(featureId: String, optionId: String, isChecked: Boolean)
     }
 }

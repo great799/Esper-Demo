@@ -10,11 +10,14 @@ import com.app.esper_demo.network.model.MobileFeatureDetail
 import com.app.esper_demo.network.respository.FeatureListRepository
 import com.app.esper_demo.ui.adapter.FeatureListAdapterItem
 import com.app.esper_demo.utils.ApiResponseWrapper
-import com.app.esper_demo.utils.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.*
 import javax.inject.Inject
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.collections.LinkedHashMap
 
 class FeatureListViewModel : BaseViewModel() {
 
@@ -25,8 +28,13 @@ class FeatureListViewModel : BaseViewModel() {
     val loadingLiveData: MutableLiveData<Boolean> = MutableLiveData()
     val networkErrorLiveData: MutableLiveData<String> = MutableLiveData()
     val apiErrorLiveData: MutableLiveData<ApiResponseWrapper.GenericError> = MutableLiveData()
-    private var originalUIAdapterData: MutableList<FeatureListAdapterItem> = ArrayList()
-    private var exclusionsData: List<List<ExclusionItem>> = ArrayList()
+    val submitButtonVisibilityLiveData: MutableLiveData<Boolean> = MutableLiveData()
+
+    private var originalUIAdapterDataMap: HashMap<String, FeatureListAdapterItem>? = null
+    private var exclusionsDataMap: HashMap<String, MutableList<String>>? = null
+
+    private var selectedItems: LinkedList<String>? = null
+    private var deSelectedItems: LinkedList<String>? = null
 
     init {
         EsperApplication.getAppComponent().inject(this)
@@ -37,8 +45,7 @@ class FeatureListViewModel : BaseViewModel() {
         viewModelScope.launch {
             when (val response = featureListRepository.getFeaturesData()) {
                 is ApiResponseWrapper.Success -> {
-                    exclusionsData = response.value.exclusions
-                    processDataToShowInUI(response.value.features)
+                    processDataToShowInUI(response.value.features, response.value.exclusions)
                 }
                 is ApiResponseWrapper.NetworkError -> {
                     loadingLiveData.postValue(false)
@@ -54,9 +61,13 @@ class FeatureListViewModel : BaseViewModel() {
         }
     }
 
-    private suspend fun processDataToShowInUI(features: List<MobileFeatureDetail>) {
+    private suspend fun processDataToShowInUI(
+        features: List<MobileFeatureDetail>,
+        exclusionsData: List<List<ExclusionItem>>
+    ) {
         withContext(Dispatchers.IO) {
-            originalUIAdapterData.clear()
+            originalUIAdapterDataMap = LinkedHashMap()
+            var originalUIAdapterData = mutableListOf<FeatureListAdapterItem>()
             for (feature in features) {
                 val adapterItem = FeatureListAdapterItem().apply {
                     showTitle = true
@@ -64,6 +75,7 @@ class FeatureListViewModel : BaseViewModel() {
                     featureId = feature.featureId
                 }
                 originalUIAdapterData.add(adapterItem)
+                originalUIAdapterDataMap?.put("${feature.featureId}-0", adapterItem)
                 for (option in feature.options) {
                     val adapterItem = FeatureListAdapterItem().apply {
                         name = option.optionName
@@ -72,24 +84,77 @@ class FeatureListViewModel : BaseViewModel() {
                         optionId = option.optionId
                     }
                     originalUIAdapterData.add(adapterItem)
+                    originalUIAdapterDataMap?.put(
+                        "${feature.featureId}-${option.optionId}",
+                        adapterItem
+                    )
                 }
             }
+
+            exclusionsDataMap = HashMap()
+            for (item in exclusionsData) {
+                for (i in item.indices) {
+                    var list = exclusionsDataMap?.get("${item[i].featureId}-${item[i].optionsId}")
+                    if (list == null) {
+                        list = mutableListOf()
+                    }
+                    for (j in item.indices) {
+                        if (i != j) {
+                            list.add("${item[j].featureId}-${item[j].optionsId}")
+                        }
+                    }
+                    exclusionsDataMap?.put("${item[i].featureId}-${item[i].optionsId}", list)
+                }
+            }
+
             loadingLiveData.postValue(false)
             uiAdapterLiveData.postValue(ArrayList(originalUIAdapterData))
         }
     }
 
-    fun refreshItemsOnCheckChange(features: MutableList<FeatureListAdapterItem>) {
+    fun onFeatureCheckChanged(item: String, isChecked: Boolean) {
+        if (selectedItems == null) {
+            selectedItems = LinkedList()
+        }
+        if (deSelectedItems == null) {
+            deSelectedItems = LinkedList()
+        }
+        if (isChecked) {
+            selectedItems?.add(item)
+            deSelectedItems?.remove(item)
+        } else {
+            deSelectedItems?.add(item)
+            selectedItems?.remove(item)
+        }
+        submitButtonVisibilityLiveData.postValue(!selectedItems.isNullOrEmpty())
+        refreshItemsOnCheckChange()
+    }
+
+    private fun refreshItemsOnCheckChange() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                var count = 0
                 loadingLiveData.postValue(true)
-                for (item in uiAdapterLiveData.value!!) {
-                    if(item.isChecked){
-                        count++
+                val dataMap = LinkedHashMap(originalUIAdapterDataMap)
+                for (key in selectedItems!!) {
+                    val exclusions = exclusionsDataMap?.get(key)
+                    if (exclusions != null) {
+                        for (exclusion in exclusions!!) {
+                            dataMap.remove(exclusion)
+                        }
                     }
+                    dataMap[key]?.isChecked = true
                 }
-                AppLog.d("Checked item count: $count")
+                for (key in deSelectedItems!!) {
+                    dataMap[key]?.isChecked = false
+                }
+
+                var originalUIAdapterData = mutableListOf<FeatureListAdapterItem>()
+                for (key in dataMap.keys) {
+                    val feature = dataMap[key]
+                    originalUIAdapterData.add(feature!!)
+                }
+
+                uiAdapterLiveData.postValue(ArrayList(originalUIAdapterData))
                 loadingLiveData.postValue(false)
             }
         }

@@ -56,6 +56,7 @@ class FeatureListFragment : BaseFragment(), FeatureListAdapter.ItemSelectedListe
     }
 
     private fun initUI() {
+        binding.btnSubmit.visibility = View.GONE
         viewModel.getFeaturesData()
     }
 
@@ -74,6 +75,14 @@ class FeatureListFragment : BaseFragment(), FeatureListAdapter.ItemSelectedListe
 
         viewModel.networkErrorLiveData.observe(viewLifecycleOwner, {
             showToast(it, Toast.LENGTH_LONG)
+        })
+
+        viewModel.submitButtonVisibilityLiveData.observe(viewLifecycleOwner, {
+            if (it) {
+                binding.btnSubmit.visibility = View.VISIBLE
+            } else {
+                binding.btnSubmit.visibility = View.GONE
+            }
         })
 
         viewModel.uiAdapterLiveData.observe(viewLifecycleOwner, {
@@ -98,7 +107,7 @@ class FeatureListFragment : BaseFragment(), FeatureListAdapter.ItemSelectedListe
         }
     }
 
-    override fun onItemSelect(/*index: Int, isChecked: Boolean*/) {
-        viewModel.refreshItemsOnCheckChange(features!!)
+    override fun onItemSelect(featureId: String, optionId: String, isChecked: Boolean) {
+        viewModel.onFeatureCheckChanged("$featureId-$optionId", isChecked)
     }
 }
