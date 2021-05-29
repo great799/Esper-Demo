@@ -57,7 +57,8 @@ class FeatureListFragment : BaseFragment(), FeatureListAdapter.ItemSelectedListe
 
     private fun initUI() {
         binding.btnSubmit.visibility = View.GONE
-        viewModel.getFeaturesData()
+        if (viewModel.loadingLiveData.value == null && viewModel.uiAdapterLiveData.value.isNullOrEmpty())
+            viewModel.getFeaturesData()
     }
 
     private fun initObservers() {
